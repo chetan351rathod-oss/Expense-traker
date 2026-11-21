@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expense Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div>
+      <h1>Expense Tracker</h1>
+      <p class="sub">Track spending, filter by date and category, and see where your money goes.</p>
+    </div>
+    <div class="total-box">
+      <span class="label">Total (filtered)</span>
+      <span class="total-value">₹{{ "{:,.2f}".format(total) }}</span>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- LEFT COLUMN -->
+    <section class="col-main">
+
+      <form class="panel filters" method="get" action="/">
+        <h2>Filters</h2>
+        <div class="filter-row">
+          <label>From <input type="date" name="start" value="{{ filters.start or '' }}"></label>
+          <label>To <input type="date" name="end" value="{{ filters.end or '' }}"></label>
+          <label>Category
+            <select name="category">
+              <option value="">All</option>
+              {% for c in categories %}
+              <option value="{{ c }}" {{ 'selected' if filters.category == c }}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="btn-group">
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn ghost" href="/">Reset</a>
+          </div>
+        </div>
+      </form>
+
+      <div class="panel">
+        <h2>Expenses</h2>
+        {% if expenses %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for e in expenses %}
+              <tr>
+                <td class="muted">{{ e.date }}</td>
+                <td>{{ e.description }}</td>
+                <td><span class="chip">{{ e.category }}</span></td>
+                <td class="num">₹{{ "{:,.2f}".format(e.amount) }}</td>
+                <td class="act">
+                  <form method="post" action="/delete/{{ e.id }}">
+                    <button class="btn danger small" type="submit">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty">No expenses match these filters. Add one using the form on the right.</p>
+        {% endif %}
+      </div>
+
+      <div class="charts">
+        <div class="panel">
+          <h2>Category breakdown</h2>
+          <div class="chart-box"><canvas id="catChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2>Daily spending trend</h2>
+          <div class="chart-box"><canvas id="timeChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2>Monthly spending</h2>
+          <div class="chart-box"><canvas id="monthChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2>Largest expenses</h2>
+          <div class="chart-box"><canvas id="largestChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN -->
+    <aside class="col-side">
+      <form class="panel add" method="post" action="/add">
+        <h2>Add expense</h2>
+        <label>Description
+          <input type="text" name="description" placeholder="e.g. Lunch with friends" required>
+        </label>
+        <label>Amount (₹)
+          <input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required>
+        </label>
+        <label>Date
+          <input type="date" name="date" value="{{ today }}" required>
+        </label>
+        <label>Category
+          <select name="category" required>
+            {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </label>
+        <button class="btn primary wide" type="submit">Add expense</button>
+      </form>
+    </aside>
+
+  </main>
+</div>
+
+<script id="chart-data" type="application/json">
+  {{ {
+    'byCategory': by_category,
+    'overTime': over_time,
+    'byMonth': by_month,
+    'largestExpenses': largest_expenses | map(attribute='description') | list,
+    'largestAmounts': largest_expenses | map(attribute='amount') | list
+  } | tojson }}
+</script>
+<script>
+  const { byCategory, overTime, byMonth, largestExpenses, largestAmounts } =
+    JSON.parse(document.getElementById('chart-data').textContent);
+
+  const palette = ['#5eead4','#60a5fa','#f9a8d4','#fcd34d','#a78bfa','#fb923c','#86efac','#f87171'];
+  const text = '#9fb0c3', grid = 'rgba(159,176,195,0.12)';
+  Chart.defaults.font.family = "'Manrope', sans-serif";
+  Chart.defaults.color = text;
+  const currency = value => '₹' + Number(value).toLocaleString('en-IN');
+  const axisOptions = {
+    x: { grid: { display: false } },
+    y: {
+      grid: { color: grid },
+      beginAtZero: true,
+      ticks: { callback: currency }
+    }
+  };
+
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(byCategory),
+            datasets: [{ data: Object.values(byCategory), backgroundColor: palette, borderWidth: 0,
+                         hoverOffset: 6 }] },
+    options: { maintainAspectRatio: false, cutout: '68%',
+               plugins: {
+                 legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } },
+                 tooltip: { callbacks: { label: context => `${context.label}: ${currency(context.raw)}` } }
+               } }
+  });
+
+  new Chart(document.getElementById('timeChart'), {
+    type: 'line',
+    data: { labels: Object.keys(overTime),
+            datasets: [{ label: 'Daily total', data: Object.values(overTime), borderColor: '#5eead4',
+                         backgroundColor: 'rgba(94,234,212,0.12)', fill: true, tension: 0.3,
+                         pointRadius: 3, pointHoverRadius: 5 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+               tooltip: { callbacks: { label: context => currency(context.raw) } } },
+               scales: axisOptions }
+  });
+
+  new Chart(document.getElementById('monthChart'), {
+    type: 'bar',
+    data: { labels: Object.keys(byMonth),
+            datasets: [{ label: 'Monthly total', data: Object.values(byMonth),
+                         backgroundColor: '#60a5fa', borderRadius: 6, maxBarThickness: 36 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false },
+               tooltip: { callbacks: { label: context => currency(context.raw) } } },
+               scales: axisOptions }
+  });
+
+  new Chart(document.getElementById('largestChart'), {
+    type: 'bar',
+    data: { labels: largestExpenses,
+            datasets: [{ label: 'Expense amount', data: largestAmounts,
+                         backgroundColor: palette, borderRadius: 6, maxBarThickness: 24 }] },
+    options: { indexAxis: 'y', maintainAspectRatio: false,
+               plugins: { legend: { display: false },
+                          tooltip: { callbacks: { label: context => currency(context.raw) } } },
+               scales: {
+                 x: { grid: { color: grid }, beginAtZero: true, ticks: { callback: currency } },
+                 y: { grid: { display: false } }
+               } }
+  });
+</script>
+</body>
+</html>

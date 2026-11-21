@@ -1,0 +1,116 @@
+:root {
+  --bg: #112139;
+  --surface: #122d53;
+  --surface-2: #1b2738;
+  --line: #243349;
+  --text: #e8eef6;
+  --muted: #8fa1b5;
+  --accent: #5eead4;
+  --accent-ink: #062b27;
+  --danger: #f87171;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.page { max-width: 1180px; margin: 0 auto; padding: 32px 24px 56px; }
+
+/* Header */
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+h1 { margin: 0 0 4px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+.sub { margin: 0; color: var(--muted); max-width: 52ch; }
+.total-box { text-align: right; }
+.label { display: block; color: var(--muted); font-size: 13px; }
+.total-value { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.col-main { display: grid; gap: 20px; }
+.col-side { position: sticky; top: 24px; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+h2 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }
+
+/* Forms */
+label { display: block; font-size: 13px; color: var(--muted); }
+.add label { margin-bottom: 14px; }
+input, select {
+  display: block; width: 100%; margin-top: 6px;
+  padding: 9px 11px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+input::placeholder { color: #62748a; }
+input:focus-visible, select:focus-visible, .btn:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+
+.filter-row { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 12px; align-items: end; }
+.btn-group { display: flex; gap: 8px; }
+
+/* Buttons */
+.btn {
+  display: inline-block; padding: 9px 16px;
+  border-radius: 8px; border: 1px solid transparent;
+  font: inherit; font-weight: 600; cursor: pointer; text-decoration: none;
+  transition: background .15s, border-color .15s;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { background: #7ff2e0; }
+.btn.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.danger { background: transparent; color: var(--danger); border-color: rgba(248,113,113,.4); }
+.btn.danger:hover { background: rgba(248,113,113,.12); }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.btn.wide { width: 100%; margin-top: 4px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; font-size: 13px; font-weight: 500; color: var(--muted);
+  padding: 8px 12px; border-bottom: 1px solid var(--line);
+}
+td { padding: 12px; border-bottom: 1px solid var(--line); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--surface-2); }
+.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.muted { color: var(--muted); white-space: nowrap; }
+.act { width: 1%; text-align: right; }
+.act form { margin: 0; }
+.chip {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); font-size: 13px;
+}
+.empty { color: var(--muted); margin: 0; padding: 8px 0; }
+
+/* Charts */
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.chart-box { position: relative; height: 260px; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .col-side { position: static; order: -1; }
+  .charts { grid-template-columns: 1fr; }
+  .filter-row { grid-template-columns: 1fr 1fr; }
+  .btn-group { grid-column: 1 / -1; }
+  .total-box { text-align: left; }
+}
